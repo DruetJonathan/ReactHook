@@ -1,6 +1,6 @@
 // import {useEffect, useState} from 'react'
 import './App.css'
-import {memo, useEffect, useMemo, useRef, useState} from "react";
+import {memo, useEffect, useMemo, useReducer, useRef, useState} from "react";
 import {Input} from "./Components/Input.jsx";
 import {useToggle} from "./hooks/useToggle.js";
 import {useIncrement} from "./hooks/useIncrement.js";
@@ -151,11 +151,71 @@ function App() {
     // On le met si le components peux provoquer erreurs
     // fallback se qui se passe en cas d'erreur
     // onReset permet de sortir de l'erreur => chose à effectuer pour résoudre le soucis
-    return <ErrorBoundary
-        FallbackComponent={AlertError}
-        onReset={()=>console.log('reset')}>
-        <p>Test</p>
-    </ErrorBoundary>
+    // return <ErrorBoundary
+    //     FallbackComponent={AlertError}
+    //     onReset={()=>console.log('reset')}>
+    //     <p>Test</p>
+    // </ErrorBoundary>
+    ////////////////// HOOK USEREDUCER
+    function reducer(state, action) {
+        // ne jamais muter l'etat => faut recrer un objet
+        if (action.type === 'REMOVE_TODO'){
+            return {
+                ...state,
+                todo: state.todo.filter(todo =>todo !== action.payload)
+            }
+        }
+        if (action.type === 'TOGGLE_TODO'){
+            return {
+                ...state,
+                todo: state.todo.map(todo =>todo === action.payload ? {
+                    ...todo,
+                    checked: !todo.checked
+                } : todo)
+            }
+        }
+        if (action.type === 'CLEAR_COMPLETED'){
+            return {
+                ...state,
+                todo: state.todo.filter(todo => !todo.checked )
+            }
+        }
+
+
+        return state
+    }
+
+    const [state, dispatch] = useReducer(reducer, {
+        todo: [
+            {
+                name: 'faire course 1',
+                checked: false,
+            },
+            {
+                name: 'faire course 2',
+                checked: false,
+            },
+            {
+                name: 'faire course 3',
+                checked: false,
+            },
+        ],
+    });
+
+    return (
+        <div>
+            <ul>
+                {state.todo.map((value) => (
+                    <li key={value.name}>
+                        <input type="checkbox" checked={value.checked} onChange={() => dispatch({ type: 'TOGGLE_TODO', payload: value })}/>
+                        {value.name}
+                        <button onClick={() => dispatch({ type: 'REMOVE_TODO', payload: value })}>Supprimer</button>
+                    </li>
+                ))}
+            </ul>
+            <button onClick={()=>dispatch({type:'CLEAR_COMPLETED'})}>Supprimer tâches accomplies</button>
+        </div>
+    );
 }
 
 // const InfoMemo = memo(function Info() {
@@ -182,12 +242,12 @@ function App() {
 //     )
 // }
 
-function AlertError({error, resetErrorBoundary}) {
-    return <div className="alert alert-danger">
-        {error.toString()}
-        <button className="btn btn-secondary" onClick={resetErrorBoundary}></button>
-    </div>
-}
+// function AlertError({error, resetErrorBoundary}) {
+//     return <div className="alert alert-danger">
+//         {error.toString()}
+//         <button className="btn btn-secondary" onClick={resetErrorBoundary}></button>
+//     </div>
+// }
 
 // function Fallback({ error, resetErrorBoundary }) {
 //     // On peut appeler resetErrorBoundary() pour réinitialiser l'erreur et tenter un nouveau rendu.
